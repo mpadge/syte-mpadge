@@ -35,4 +35,12 @@ def range_to_files(lat: float, lon:float, buffer_dist: float = 100):
     combs = np.column_stack((x_grid.flatten(), y_grid.flatten()))
     comb_strings = ['_'.join(map(str, row)) for row in combs]
 
+    # Plus index the extreme tiles, which by definition only partially overlap,
+    # while all others must include full data:
+    mask_x = np.logical_or(combs[:, 0] == rng[0], combs[:, 0] == rng[2])
+    mask_y = np.logical_or(combs[:, 1] == rng[1], combs[:, 1] == rng[3])
+    mask = np.logical_or(mask_x, mask_y).astype(int) # true == 1
+
+    comb_strings = np.column_stack((comb_strings, mask))
+
     return comb_strings
