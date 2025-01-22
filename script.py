@@ -111,5 +111,26 @@ r = []
 for f in fnew:
     r.append(riox.open_rasterio(f))
 
+
 merged_raster = merge_arrays(dataarrays = r, crs='epsg:25832')
+# This errors:
 # merged_raster.rio.to_raster("merged.tif")
+# # So this code does it manually:
+transform = merged_raster.rio.transform()
+# Read one file to get kwargs:
+ftmp = rasterio.open(fnew[0])
+dst_kwargs = ftmp.meta.copy()
+dst_kwargs.update({
+    'transform': transform,
+    'count': merged_raster.shape[0],
+    'width': merged_raster.shape[1],
+    'height': merged_raster.shape[2]
+})
+
+merged_arr = merged_raster.to_numpy()
+merged_data = rasterio.open('junk.tif', 'w', **dst_kwargs)
+merged_data.write(merged_arr)
+merged_data.close()
+
+for f in fnew:
+    os.remove(f)
