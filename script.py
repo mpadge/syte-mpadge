@@ -4,6 +4,8 @@ import shapely
 import geopandas as gpd
 import pyproj
 
+# Convert an EPSG:4326 (lat, lon) pair into a buffer polygon, and return the
+# range limits in EPSG:25832 values.
 def pt_to_25832Range(lat: float, lon: float, buffer_dist: float = 100) -> pd.Series:
     pt = shapely.Point([lon, lat])
     pt = gpd.GeoDataFrame(index=[0], crs='epsg:4326', geometry=[pt])
@@ -24,8 +26,10 @@ def pt_to_25832Range(lat: float, lon: float, buffer_dist: float = 100) -> pd.Ser
 
     return [minx_i, miny_i, maxx_i, maxy_i]
 
+# Convert an EPSG:4326 (lat, lon) pair into a buffer polygon, and return the
+# coordinates pairs in EPSG:25832 which that polygon overlaps. Uses the
+# `pt_to_25832Range` function.
 def range_to_files(lat: float, lon:float, buffer_dist: float = 100):
-
     rng = pt_to_25832Range(lat, lon, buffer_dist)
 
     # Create sequences of integers:
