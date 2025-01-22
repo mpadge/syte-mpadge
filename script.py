@@ -10,6 +10,8 @@ import geopandas as gpd
 import rasterio
 import rasterio.merge
 from rasterio.enums import Resampling
+import rioxarray as riox
+from rioxarray.merge import merge_arrays
 
 # Convert an EPSG:4326 (lat, lon) pair into a buffer polygon, and return the
 # range limits in EPSG:25832 values.
@@ -73,7 +75,6 @@ def get_file_names(lat: float, lon:float, buffer_dist: float = 100):
 
     return filtered
 
-# files = get_file_names(52.07, 8.49)
 def aggregate_one_file (f, out_size: int = 256):
     r0 = rasterio.open(f)
     out_size = int(256)
@@ -95,3 +96,20 @@ def aggregate_one_file (f, out_size: int = 256):
     dst = rasterio.open(fnew, 'w', **dst_kwargs)
     dst.write(r0ag)
     dst.close()
+
+    return fnew
+
+# d = rasterio.open('junk.tif')
+# rasterio.plot.show(d)
+files = get_file_names(52.07, 8.49)
+fnew = []
+for f in files:
+    fnew.append(aggregate_one_file(f))
+    # os.remove(f)
+
+r = []
+for f in fnew:
+    r.append(riox.open_rasterio(f))
+
+merged_raster = merge_arrays(dataarrays = r, crs='epsg:25832')
+# merged_raster.rio.to_raster("merged.tif")
