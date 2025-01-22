@@ -23,3 +23,16 @@ def pt_to_25832Range(lat: float, lon: float, buffer_dist: float = 100) -> pd.Ser
     maxy_i = int (maxy // 1000 + 1)
 
     return [minx_i, miny_i, maxx_i, maxy_i]
+
+def range_to_files(lat: float, lon:float, buffer_dist: float = 100):
+
+    rng = pt_to_25832Range(lat, lon, buffer_dist)
+
+    # Create sequences of integers:
+    xvals = np.arange(rng[0], rng[2] + 1)
+    yvals = np.arange(rng[1], rng[3] + 1)
+    x_grid, y_grid = np.meshgrid(xvals, yvals)
+    combs = np.column_stack((x_grid.flatten(), y_grid.flatten()))
+    comb_strings = ['_'.join(map(str, row)) for row in combs]
+
+    return comb_strings
