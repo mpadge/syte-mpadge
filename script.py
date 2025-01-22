@@ -3,9 +3,12 @@ import numpy as np
 import shapely
 import geopandas as gpd
 import pyproj
+from glob import glob
+import re
 
 # Convert an EPSG:4326 (lat, lon) pair into a buffer polygon, and return the
 # range limits in EPSG:25832 values.
+# [465000, 5769000] = [8.49, 52.07]
 def pt_to_25832Range(lat: float, lon: float, buffer_dist: float = 100) -> pd.Series:
     pt = shapely.Point([lon, lat])
     pt = gpd.GeoDataFrame(index=[0], crs='epsg:4326', geometry=[pt])
@@ -48,3 +51,19 @@ def range_to_files(lat: float, lon:float, buffer_dist: float = 100):
     comb_strings = np.column_stack((comb_strings, mask))
 
     return comb_strings
+
+# Use preceding functions to accept a (lat, lon) pair and buffer distance in
+# metres, and return an array of the corresponding file names which the buffer
+# overlaps.
+def get_file_names(lat: float, lon:float, buffer_dist: float = 100):
+    latlon_combs = range_to_files(lat, lon, buffer_dist)
+    latlon_mask = latlon_combs[:, 1].tolist()
+    latlon_combs = latlon_combs[:, 0].tolist()
+    files = glob("./orthophotos/nw/*.jp2")
+
+    filtered = []
+    for f in files:
+        if any(re.search(ll, f) for ll in latlon_combs):
+            filtered.append(f)
+
+    return filtered
