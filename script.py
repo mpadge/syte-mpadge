@@ -1,10 +1,15 @@
+import os
+import re
+from glob import glob
+
 import pandas as pd
 import numpy as np
+
 import shapely
 import geopandas as gpd
-import pyproj
-from glob import glob
-import re
+import rasterio
+import rasterio.merge
+from rasterio.enums import Resampling
 
 # Convert an EPSG:4326 (lat, lon) pair into a buffer polygon, and return the
 # range limits in EPSG:25832 values.
@@ -67,3 +72,26 @@ def get_file_names(lat: float, lon:float, buffer_dist: float = 100):
             filtered.append(f)
 
     return filtered
+
+# files = get_file_names(52.07, 8.49)
+def aggregate_one_file (f, out_size: int = 256):
+    r0 = rasterio.open(f)
+    out_size = int(256)
+    r0ag = r0.read(
+        out_shape=(r0.count, out_size, out_size),
+        resampling=Resampling.average
+    )
+    r0ag = r0.read(out_shape=(r0.count, out_size, out_size), resampling=Resampling.average)
+    new_transform = r0.transform * r0.transform.scale((r0.width / out_size), (r0.height / out_size))
+    dst_kwargs = r0.meta.copy()
+    dst_kwargs.update({
+        'transform': new_transform,
+        'count': r0.count,
+        'width': out_size,
+        'height': out_size
+    })
+    # Then use those updated args to write new aggregate data:
+    fnew = os.path.basename(f)
+    dst = rasterio.open(fnew, 'w', **dst_kwargs)
+    dst.write(r0ag)
+    dst.close()
