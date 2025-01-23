@@ -191,30 +191,9 @@ lon = 8.49
 buffer_dist = 100
 
 import time
-def measure_get_image_scaling(lat: float, lon: float, npts: int = 3):
-    buffers = [50] + list(range(100, 1001, 100))
-    durations = []
-    rpts = 3
-    for b in buffers:
-        start = time.time()
-        for r in range(rpts):
-            img = get_image(lat, lon, b)
-        stop = time.time()
-        durations.append((stop - start) / npts)
-
-    return [buffers, durations]
-
-# t0 = time.time()
-# dat = measure_get_image_scaling(lat, lon)
-# t1 = time.time()
-# elapsed = t1 - t0
-# print(f"Elapsed time: {elapsed}")
-
-import matplotlib.pyplot as plt
-fig, ax = plt.subplots()
-ax.set_xlabel("Buffer dist(m)")
-ax.set_ylabel("Calculation time(s)")
-ax.set_title("Scaling of 'get_image' with buffer radius")
-# ax.plot(dat[0], dat[1])
-# plt.show()
-# fig.savefig("scaling.png", transparent = False)
+t0 = time.time()
+img = get_image(lat, lon)
+t1 = time.time()
+elapsed = t1 - t0
+print(f"Elapsed time: {elapsed}")
+print(img)
