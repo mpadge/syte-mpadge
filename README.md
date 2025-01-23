@@ -1,4 +1,4 @@
-## Stye coding exercise
+## Syte coding exercise
 
 > The primary performance goal is to minimize the response time of the
 > get_image(lat, long, radius) function. Given that reading a single .jp2 file
