@@ -87,7 +87,6 @@ def get_file_names(lat: float, lon:float, buffer_dist: float = 100):
 # `out_size` parameter.
 def aggregate_one_file (f, out_size: int = 256):
     r0 = rasterio.open(f)
-    out_size = int(256)
     r0ag = r0.read(
         out_shape=(r0.count, out_size, out_size),
         resampling=Resampling.average
@@ -109,20 +108,19 @@ def aggregate_one_file (f, out_size: int = 256):
 
     return fnew
 
-def output_file_size(lat: float, lon:float, buffer_dist: float = 100):
+def output_file_size(lat: float, lon:float, buffer_dist: float = 100, target_res: int = 512):
     img_std_georange = 1000
     img_std_pixels = 10000
     rng = pt_to_25832Range(lat, lon, buffer_dist, round = False)
-    nfiles = range_to_files(lat, lon, buffer_dist).shape[0]
-    ntiles = int(math.sqrt(nfiles))
-    npixels_w = int(nfiles * img_std_pixels * (rng[2] - rng[0]) / img_std_georange)
-    npixels_h = int(nfiles * img_std_pixels * (rng[3] - rng[1]) / img_std_georange)
-    npixels = max(npixels_w, npixels_h)
+    npixels_w = int(img_std_pixels * (rng[2] - rng[0]) / img_std_georange)
+    npixels_h = int(img_std_pixels * (rng[3] - rng[1]) / img_std_georange)
+    npixels = min(npixels_w, npixels_h)
 
     # Base result on scaling std_pixels down to 512:
-    new_pixels = int(512 * npixels / img_std_pixels)
+    new_pixels = int(target_res * img_std_pixels / npixels)
     # Ensure result is an even number:
     new_pixels = new_pixels + (1 if new_pixels % 2 != 0 else 0)
+    new_pixels = max(512, new_pixels)
     return new_pixels
 
 
