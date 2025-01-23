@@ -47,6 +47,8 @@ below quadratic, which is encouraging.
 
 ### Optimizations
 
+**Downscale input images**
+
 Potential optimizations that could be implemented depend very much on typical
 envisioned application of the code, and in particular on how common
 approximately repeated calls are likely to be. The entire performance
@@ -59,6 +61,8 @@ size ("radius"). A buffer size of 100m translates to a reduction to under half
 of the current height and width of these images. Such reductions would also
 quadratically increase computational efficiency.
 
+**Use local cache**
+
 If further optimization were required, a second stage could involve a
 coarsening of the initial `aggregate_one_file` function into discrete, coarser
 chunks which could then be locally cached. An additional function could then be
@@ -70,3 +74,10 @@ generate 100 possible sub-images from each input image, resulting in a maximum
 of 6,400 locally-cached files. This cache would occupy a tiny fraction of the
 size of the original data, and would likely enormously speed up the whole
 routine.
+
+**Parallelise**
+
+The main `generate_merged_files` contains an initial `for` loop which occupies
+most of the processing time. This ultimately calls `rasterio.read`, with
+parameters to trim and aggregate the results. This function can also be called
+in parallel mode, which would obviously also reduce computation times.
