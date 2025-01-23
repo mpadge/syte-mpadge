@@ -13,6 +13,8 @@ from rasterio.enums import Resampling
 import rioxarray as riox
 from rioxarray.merge import merge_arrays
 
+DATASET = "orthophotos/nw"
+
 # Convert an EPSG:4326 (lat, lon) pair into a buffer polygon, and return the
 # range limits in EPSG:25832 values.
 # [465000, 5769000] = [8.49, 52.07]
@@ -66,7 +68,7 @@ def get_file_names(lat: float, lon:float, buffer_dist: float = 100):
     latlon_combs = range_to_files(lat, lon, buffer_dist)
     latlon_mask = latlon_combs[:, 1].tolist()
     latlon_combs = latlon_combs[:, 0].tolist()
-    files = glob("./orthophotos/nw/*.jp2")
+    files = glob(DATASET + "/*.jp2")
 
     filtered = []
     for f in files:
