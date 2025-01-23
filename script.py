@@ -83,15 +83,29 @@ def get_file_names(lat: float, lon:float, buffer_dist: float = 100):
 
     return filtered
 
-# Aggregate one high-resolution file into lower resolution defined by
-# `out_size` parameter.
-def aggregate_one_file (f, out_size: int = 256):
+# Read bounding-box limited chunk of one file, and Aggregate into lower
+# resolution defined by `out_size` parameter.
+def aggregate_one_file (f: str, lat: float, lon: float, buffer_dist: float = 100, out_size: int = 256):
+    rng = pt_to_25832Range(lat, lon, buffer_dist, round = False)
     r0 = rasterio.open(f)
+
+    # Get range window to read:
+    bottom = max(r0.bounds.bottom, rng[1])
+    top = min(r0.bounds.top, rng[3])
+    left = max(r0.bounds.left, rng[0])
+    right = min(r0.bounds.right, rng[2])
+    read_win = rasterio.windows.from_bounds(
+        left = left,
+        bottom = bottom,
+        right = right,
+        top = top,
+        transform = r0.transform
+    )
     r0ag = r0.read(
         out_shape=(r0.count, out_size, out_size),
-        resampling=Resampling.average
+        resampling=Resampling.average,
+        window = read_win
     )
-    r0ag = r0.read(out_shape=(r0.count, out_size, out_size), resampling=Resampling.average)
     new_transform = r0.transform * r0.transform.scale((r0.width / out_size), (r0.height / out_size))
     dst_kwargs = r0.meta.copy()
     dst_kwargs.update({
@@ -108,28 +122,11 @@ def aggregate_one_file (f, out_size: int = 256):
 
     return fnew
 
-def output_file_size(lat: float, lon:float, buffer_dist: float = 100, target_res: int = 512):
-    img_std_georange = 1000
-    img_std_pixels = 10000
-    rng = pt_to_25832Range(lat, lon, buffer_dist, round = False)
-    npixels_w = int(img_std_pixels * (rng[2] - rng[0]) / img_std_georange)
-    npixels_h = int(img_std_pixels * (rng[3] - rng[1]) / img_std_georange)
-    npixels = min(npixels_w, npixels_h)
-
-    # Base result on scaling std_pixels down to 512:
-    new_pixels = int(target_res * img_std_pixels / npixels)
-    # Ensure result is an even number:
-    new_pixels = new_pixels + (1 if new_pixels % 2 != 0 else 0)
-    new_pixels = max(512, new_pixels)
-    return new_pixels
-
-
-def generate_merged_files(lat: float, lon:float, buffer_dist: float = 100, outfile: str = 'output.tif'):
-    out_size = output_file_size(lat, lon, buffer_dist)
+def generate_merged_files(lat: float, lon:float, buffer_dist: float = 100, out_size: int = 256, outfile: str = 'output.tif'):
     files = get_file_names(lat, lon, buffer_dist)
     fnew = []
     for f in files:
-        fnew.append(aggregate_one_file(f, out_size))
+        fnew.append(aggregate_one_file(f, lat, lon, buffer_dist, out_size))
 
     r = []
     for f in fnew:
@@ -161,27 +158,31 @@ def generate_merged_files(lat: float, lon:float, buffer_dist: float = 100, outfi
 
     return outfile
 
-def get_image_crop_limits(img: rasterio.io.DatasetReader, lat: float, lon: float, buffer_dist: float):
-    bounds = img.bounds
-    pt_range = pt_to_25832Range(lat, lon, buffer_dist, round = False)
-
-    height_img = bounds.top - bounds.bottom
-    width_img = bounds.right - bounds.left
-
-    height_crop = int(img.shape[0] * (pt_range[3] - pt_range[1]) / height_img)
-    width_crop = int(img.shape[1] * (pt_range[2] - pt_range[0]) / width_img)
-    bottom_crop = int(img.shape[0] * (pt_range [1] - bounds.bottom) / height_img)
-    left_crop = int(img.shape[1] * (pt_range[2] - bounds.left) / width_img)
-
-    return [left_crop, bottom_crop, left_crop + width_crop, bottom_crop + height_crop]
-
 def get_image(lat: float, lon:float, buffer_dist: float = 100):
     f = generate_merged_files(lat, lon, buffer_dist)
     img = rasterio.open(f)
-    crop_limits = get_image_crop_limits(img, lat, lon, buffer_dist)
-    img = reshape_as_image(img.read())
+    transform = img.transform
+    dst_kwargs = img.meta.copy()
+    dst_kwargs.update({
+        'transform': transform,
+        'width': 256,
+        'height': 256
+    })
+    img_arr = img.read()
+    outfile = 'output.tif'
+    img_data = rasterio.open(outfile, 'w', **dst_kwargs)
+    img_data.write(img_arr)
+    img_data.close()
+
+    img = rasterio.open(outfile).read()
+    img = reshape_as_image(img)
+
     os.remove(f)
-    img = img[crop_limits[0]:crop_limits[2]:1, crop_limits[1]:crop_limits[3]:1, :]
+    if os.path.exists(outfile):
+        os.remove(outfile)
+    if os.path.exists(outfile + '.aux.xml'):
+        os.remove(outfile + '.aux.xml')
+
     img = Image.fromarray(img)
     return img
 
