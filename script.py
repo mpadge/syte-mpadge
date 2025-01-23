@@ -107,6 +107,8 @@ def aggregate_one_file (f: str, lat: float, lon: float, buffer_dist: float = 100
 
     return fnew
 
+# use preceding function for generated trimmed and aggregated versions of
+# individual files, apply to all files and merge final result.
 def generate_merged_files(lat: float, lon:float, buffer_dist: float = 100, out_size: int = 256, outfile: str = 'output.tif'):
     files = get_file_names(lat, lon, buffer_dist)
     fnew = []
