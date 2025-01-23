@@ -1,5 +1,6 @@
 import os
 import re
+import math
 from glob import glob
 
 import pandas as pd
@@ -108,11 +109,29 @@ def aggregate_one_file (f, out_size: int = 256):
 
     return fnew
 
+def output_file_size(lat: float, lon:float, buffer_dist: float = 100):
+    img_std_georange = 1000
+    img_std_pixels = 10000
+    rng = pt_to_25832Range(lat, lon, buffer_dist, round = False)
+    nfiles = range_to_files(lat, lon, buffer_dist).shape[0]
+    ntiles = int(math.sqrt(nfiles))
+    npixels_w = int(nfiles * img_std_pixels * (rng[2] - rng[0]) / img_std_georange)
+    npixels_h = int(nfiles * img_std_pixels * (rng[3] - rng[1]) / img_std_georange)
+    npixels = max(npixels_w, npixels_h)
+
+    # Base result on scaling std_pixels down to 512:
+    new_pixels = int(512 * npixels / img_std_pixels)
+    # Ensure result is an even number:
+    new_pixels = new_pixels + (1 if new_pixels % 2 != 0 else 0)
+    return new_pixels
+
+
 def generate_merged_files(lat: float, lon:float, buffer_dist: float = 100, outfile: str = 'output.tif'):
+    out_size = output_file_size(lat, lon, buffer_dist)
     files = get_file_names(lat, lon, buffer_dist)
     fnew = []
     for f in files:
-        fnew.append(aggregate_one_file(f))
+        fnew.append(aggregate_one_file(f, out_size))
 
     r = []
     for f in fnew:
@@ -186,17 +205,17 @@ def measure_get_image_scaling(lat: float, lon: float, npts: int = 3):
 
     return [buffers, durations]
 
-t0 = time.time()
-dat = measure_get_image_scaling(lat, lon)
-t1 = time.time()
-elapsed = t1 - t0
-print(f"Elapsed time: {elapsed}")
+# t0 = time.time()
+# dat = measure_get_image_scaling(lat, lon)
+# t1 = time.time()
+# elapsed = t1 - t0
+# print(f"Elapsed time: {elapsed}")
 
 import matplotlib.pyplot as plt
 fig, ax = plt.subplots()
 ax.set_xlabel("Buffer dist(m)")
 ax.set_ylabel("Calculation time(s)")
 ax.set_title("Scaling of 'get_image' with buffer radius")
-ax.plot(dat[0], dat[1])
+# ax.plot(dat[0], dat[1])
 # plt.show()
-fig.savefig("scaling.png", transparent = False)
+# fig.savefig("scaling.png", transparent = False)
