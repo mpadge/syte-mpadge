@@ -184,3 +184,4 @@ t1 = time.time()
 elapsed = t1 - t0
 print(f"Elapsed time: {elapsed}")
 print(img)
+# img.show()

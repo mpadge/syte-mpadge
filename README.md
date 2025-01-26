@@ -15,8 +15,7 @@ single-threaded, with potential effects of multi-threading described below.
 The repository is `makefile` controlled, and includes an initial `help` option.
 `make check` will check for all required python dependencies, and provide
 information on any missing ones. `make run` will then run the script. The
-script returns an image file which may be saved by piping the output to a named
-file.
+resultant image may be viewed by uncommenting the file line, `img.show()`.
 
 ### Execution speed
 
