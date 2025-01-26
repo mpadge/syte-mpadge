@@ -9,13 +9,21 @@ The approach taken here is to use GDAL for all of the heavy lifting, through
 reading only the required portions of each file, and through applying
 aggregation (or down-sampling) filters to data _on disk_. This entirely
 eliminates any need for these files to be directly read into memory at their
-original resolution.
+original resolution. To enable useable benchmarking, the script is strictly
+single-threaded, with potential effects of multi-threading described below.
 
 The repository is `makefile` controlled, and includes an initial `help` option.
 `make check` will check for all required python dependencies, and provide
-information on any missing ones. `make run` will then run the script. This does
-not save any resultant image file, but generates a timing message indicating
-that the whole procedure generally only takes a handful of seconds.
+information on any missing ones. `make run` will then run the script. The
+script returns an image file which may be saved by piping the output to a named
+file.
+
+### Execution speed
+
+The script serves the primary purpose of issuing the time needed to process one
+image. Central coordinates for image are hand-coded within the script, and were
+chosen to overlap four tiles at a radius of 100m. The timing message indicates
+that processing these four tiles generally takes only a few seconds.
 
 ### Description of procedure
 
